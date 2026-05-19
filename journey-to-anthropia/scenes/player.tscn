@@ -1,7 +1,8 @@
-[gd_scene load_steps=32 format=3 uid="uid://cxweehey4pnce"]
+[gd_scene format=3 uid="uid://cxweehey4pnce"]
 
 [ext_resource type="Texture2D" uid="uid://docvc51ncdhtb" path="res://assets/characters/elf-main.png" id="1_3vyb7"]
 [ext_resource type="Script" uid="uid://cbyidicxmajm0" path="res://scripts/player.gd" id="1_g2els"]
+[ext_resource type="PackedScene" uid="uid://pachyna0a8ay" path="res://scenes/arrow.tscn" id="2_qhqgy"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_g2els"]
 size = Vector2(6, 15)
@@ -218,17 +219,29 @@ animations = [{
 "speed": 12.0
 }]
 
-[node name="Player" type="CharacterBody2D"]
+[sub_resource type="Gradient" id="Gradient_qhqgy"]
+offsets = PackedFloat32Array(0, 0.2, 0.8, 1)
+colors = PackedColorArray(0, 0, 0, 0, 0.3515629, 0.3515629, 0.35156286, 0.5882353, 0.36862746, 0.36862746, 0.36862746, 0.5882353, 0, 0, 0, 0)
+metadata/_snap_enabled = true
+
+[node name="Player" type="CharacterBody2D" unique_id=82025933]
 collision_layer = 2
 script = ExtResource("1_g2els")
+arrow_scene = ExtResource("2_qhqgy")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=412648644]
 position = Vector2(0, 0.5)
 shape = SubResource("RectangleShape2D_g2els")
 
-[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=791675220]
 sprite_frames = SubResource("SpriteFrames_wqfne")
 animation = &"idle-blink"
 autoplay = "idle-no-blink"
+
+[node name="Line2D" type="Line2D" parent="." unique_id=68938389]
+visible = false
+width = 1.0
+default_color = Color(0.33660752, 0.33660764, 0.33660775, 0.39215687)
+gradient = SubResource("Gradient_qhqgy")
 
 [connection signal="animation_finished" from="AnimatedSprite2D" to="." method="_on_animation_finished"]
