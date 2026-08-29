@@ -1,14 +1,17 @@
 extends CharacterBody2D
 
-const SPEED = 85.0
-const JUMP_VELOCITY = -275.0
+const SPEED = 100.0
+@export var max_jump_height: float = 56.0 # in pixels
+@export var jump_time_to_peak: float = 0.42
+@export var fall_gravity_mult: float = 1.4
+
+# State / Physics variables
+var jump_velocity: float
+var jump_gravity: float
+var fall_gravity: float
 var direction: float = 0.0
 
-# Hardcoded frame based on arm sprite sheet
-const AIM_FRAME_STRAIGHT: int = 32
-const AIM_FRAME_UP: int = 33
-const AIM_FRAME_DOWN: int = 34
-
+# Bow and Arrow Params
 @export var arrow_scene: PackedScene
 @export var has_bow: bool = true:
 	set(value):
@@ -17,6 +20,11 @@ const AIM_FRAME_DOWN: int = 34
 var max_speed: float = 300.0
 var min_speed_pct: float = 0.1
 var max_pull_distance: float = 100.0
+
+# Hardcoded frame based on arm sprite sheet
+const AIM_FRAME_STRAIGHT: int = 32
+const AIM_FRAME_UP: int = 33
+const AIM_FRAME_DOWN: int = 34
 
 @onready var body_sprite: Sprite2D = $BodySprite
 @onready var arms_sprite: Sprite2D = $ArmsSprite
@@ -30,28 +38,41 @@ const HAND_OFFSET_UP: Vector2 = Vector2(5, -3)
 const HAND_OFFSET_DOWN: Vector2 = Vector2(4, 3)
 const LEFT_FACING_NUDGE: Vector2 = Vector2(0, -2)
 
+func _ready() -> void:
+	jump_velocity = -(2.0 * max_jump_height) / jump_time_to_peak
+	jump_gravity = (2.0 * max_jump_height) / (jump_time_to_peak ** 2)
+	fall_gravity = jump_gravity * fall_gravity_mult
+
 func _physics_process(delta: float) -> void:
 	direction = Input.get_axis("move_left", "move_right")
 	
-	# Movement
-	if not is_on_floor():
-		velocity += get_gravity() * delta
-		if velocity.y > 0 and animation_player.current_animation not in ["", "jump", "fall"]:
-			animation_player.play("fall")
-	elif is_on_floor() and direction:
-		animation_player.play("running")
-	elif animation_player.current_animation not in ["idle-blink", "idle-no-blink"]:
-		animation_player.play("idle-no-blink")
-	
-	if Input.is_action_just_pressed("jump") and is_on_floor():
-		velocity.y = JUMP_VELOCITY
-		animation_player.play("jump")	
-		
 	if direction:
 		velocity.x = direction * SPEED
 	else:
 		velocity.x = move_toward(velocity.x, 0, SPEED)
 	
+	# Jump Mechanics
+	if not is_on_floor():
+		var current_gravity = fall_gravity if velocity.y > 0 else jump_gravity
+		velocity.y += current_gravity * delta
+	if Input.is_action_just_pressed("jump") and is_on_floor():
+		velocity.y = jump_velocity
+	## Early Release - Short Jump
+	if Input.is_action_just_released("jump") and velocity.y < 0:
+			velocity.y *= 0.3
+
+	# Movement Animations
+	if not is_on_floor():
+		if 	velocity.y < 0 and animation_player.current_animation not in ["", "fall"]:
+			animation_player.play("jump")
+		elif animation_player.current_animation not in ["", "jump"]:
+			animation_player.play("fall")
+	elif direction:
+		animation_player.play("running")
+	elif animation_player.current_animation not in ["idle-blink", "idle-no-blink"]:
+		animation_player.play("idle-no-blink")
+	
+	# Bow and Arrow
 	if has_bow and Input.is_action_pressed("aim"):
 			if Input.is_action_just_pressed("shoot"):
 				shoot_arrow()
